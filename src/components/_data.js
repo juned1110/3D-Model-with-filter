@@ -1,4 +1,3 @@
-// src/components/_data.js
 export const units = [
   {
     id: "28c04592-af5b-4d7b-af70-4a3841c3fe7c",
