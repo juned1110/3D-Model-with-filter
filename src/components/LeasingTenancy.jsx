@@ -2,7 +2,6 @@ import React, { useState, useCallback, useEffect } from "react";
 import numeral from "numeral";
 import Viewer from "./Viewer";
 import { units } from "./_data";
-import Compass from "./Compass";
 
 const colorScale = (unit, selectedUnit, hasClicked) => {
   if (hasClicked && selectedUnit) {
@@ -105,7 +104,6 @@ const LeasingTenancy = () => {
       <div className="flex flex-col md:flex-row px-4">
         <div className="flex-1 w-full relative">
           <Viewer mode="3d" onReady={onReady} />
-          {space && <Compass space={space} />}
         </div>
 
         <div className="unit-details flex-1 w-full bg-white shadow-md rounded-md p-4">
