@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from "react";
 import numeral from "numeral";
 import Viewer from "./Viewer";
 import { units } from "./_data";
+import { waterLine } from "./waterLine_Data"; // Assuming you import the dataset here
 
 const colorScale = (unit, selectedUnit, hasClicked) => {
   if (hasClicked && selectedUnit) {
@@ -17,44 +18,67 @@ const LeasingTenancy = () => {
   const [selectedUnit, setSelectedUnit] = useState(null);
   const [hasClicked, setHasClicked] = useState(false);
   const [filter, setFilter] = useState("all");
+  const [isWaterlineVisible, setIsWaterlineVisible] = useState(false); // State for waterline visibility
 
   const onReady = useCallback((space) => setSpace(space), []);
 
   const applyLayer = () => {
     if (!space) return;
 
-    const filteredUnits =
-      filter === "all"
-        ? units[0].assets
-        : units[0].assets.filter((unit) => unit.status === filter);
+    // Remove all layers
+    space.removeDataLayer("units");
+    space.removeDataLayer("waterline");
 
-    space.addDataLayer({
-      id: "units",
-      type: "polygon",
-      data: filteredUnits,
-      tooltip: (d) => `${d.name} - $${numeral(d.rental).format("0,0")}/mo`,
-      color: (d) => colorScale(d, selectedUnit, hasClicked),
-      alpha: 0.7,
-      height: 2.9,
-      onClick: (event) => {
-        setSelectedUnit(event);
-        setHasClicked(true);
-        if (space && event.geometry) {
-          space.setCameraPlacement({
-            position: {
-              x: event.geometry.x + 5,
-              y: 10,
-              z: event.geometry.z + 5,
-            },
-            target: {
-              x: event.geometry.x,
-              y: 0,
-              z: event.geometry.z,
-            },
-          });
-        }
-      },
-    });
+    // Apply Units Layer if waterline is not visible
+    if (!isWaterlineVisible) {
+      const filteredUnits =
+        filter === "all"
+          ? units[0].assets
+          : units[0].assets.filter((unit) => unit.status === filter);
+
+      space.addDataLayer({
+        id: "units",
+        type: "polygon",
+        data: filteredUnits,
+        tooltip: (d) => `${d.name} - $${numeral(d.rental).format("0,0")}/mo`,
+        color: (d) => colorScale(d, selectedUnit, hasClicked),
+        alpha: 0.7,
+        height: 2.9,
+        onClick: (event) => {
+          setSelectedUnit(event);
+          setHasClicked(true);
+          if (space && event.geometry) {
+            space.setCameraPlacement({
+              position: {
+                x: event.geometry.x + 5,
+                y: 10,
+                z: event.geometry.z + 5,
+              },
+              target: {
+                x: event.geometry.x,
+                y: 0,
+                z: event.geometry.z,
+              },
+            });
+          }
+        },
+      });
+    }
+
+    // Apply WaterLine Layer if it's visible
+    if (isWaterlineVisible) {
+      const waterLineAssets = waterLine.find(
+        (layer) => layer.name === "WaterLine"
+      ).assets;
+      space.addDataLayer({
+        id: "waterline",
+        type: "polyline",
+        data: waterLineAssets,
+        color: "#026BFA", // Blue for waterline
+        alpha: 0.8,
+        width: 0.1, // Adjust width for better visibility
+      });
+    }
   };
 
   const handleFilterChange = (newFilter) => {
@@ -82,22 +106,24 @@ const LeasingTenancy = () => {
     }
   };
 
+  const toggleWaterline = () => {
+    setIsWaterlineVisible(!isWaterlineVisible); // Toggle the waterline visibility
+  };
+
   useEffect(() => {
     if (!space) return;
 
-    // Remove the existing data layer
-    space.removeDataLayer("units");
-
-    // Apply the new layer based on the current filter
+    // Apply the layers whenever state changes
     applyLayer();
 
     // Clean up when the component unmounts or space changes
     return () => {
       if (space) {
         space.removeDataLayer("units");
+        space.removeDataLayer("waterline");
       }
     };
-  }, [space, filter, selectedUnit, hasClicked]);
+  }, [space, filter, selectedUnit, hasClicked, isWaterlineVisible]);
 
   return (
     <div className="viewer-container relative">
@@ -124,6 +150,20 @@ const LeasingTenancy = () => {
                 {status.charAt(0).toUpperCase() + status.slice(1)}
               </button>
             ))}
+          </div>
+
+          {/* Waterline Toggle Button */}
+          <div className="waterline-toggle mb-4">
+            <button
+              className={`px-4 py-2 rounded-md font-semibold ${
+                isWaterlineVisible
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-200 text-black"
+              }`}
+              onClick={toggleWaterline}
+            >
+              {isWaterlineVisible ? "Hide Waterline" : "Show Waterline"}
+            </button>
           </div>
 
           {/* Room Buttons */}
